@@ -1,61 +1,181 @@
-# template-for-proposals
+# ECMAScript Proposal: Syntax for Explicitly Naming `this`
 
-A repository template for ECMAScript proposals.
+> `this` isn't really a keyword, it is the natural "main" function argument in JavaScript.
+> - (@spion)[https://github.com/mindeavor/es-pipeline-operator/issues/2#issuecomment-162348536]
 
-## Before creating a proposal
+This proposal extends the `function` declaration syntax to allow for explicit naming of what is normally called `this`.
 
-Please ensure the following:
-  1. You have read the [process document](https://tc39.github.io/process-document/)
-  1. You have reviewed the [existing proposals](https://github.com/tc39/proposals/)
-  1. You are aware that your proposal requires being a member of TC39, or locating a TC39 delegate to "champion" your proposal
+```js
+Object.defineProperty(User.prototype, {
+  get: function fullName() { // original version
+    return `${this.firstName} ${this.lastName}`
+  },
+  configurable: true,
+})
 
-## Create your proposal repo
+// versions use the feature of this proposal
 
-Follow these steps:
-  1. Click the green ["use this template"](https://github.com/tc39/template-for-proposals/generate) button in the repo header. (Note: Do not fork this repo in GitHub's web interface, as that will later prevent transfer into the TC39 organization)
-  1. Update the biblio to the latest version: `npm install --save-dev --save-exact @tc39/ecma262-biblio@latest`.
-  1. Go to your repo settings “Options” page, under “GitHub Pages”, and set the source to the **main branch** under the root (and click Save, if it does not autosave this setting)
-      1. check "Enforce HTTPS"
-      1. On "Options", under "Features", Ensure "Issues" is checked, and disable "Wiki", and "Projects" (unless you intend to use Projects)
-      1. Under "Merge button", check "automatically delete head branches"
-<!--
-  1. Avoid merge conflicts with build process output files by running:
-      ```sh
-      git config --local --add merge.output.driver true
-      git config --local --add merge.output.driver true
-      ```
-  1. Add a post-rewrite git hook to auto-rebuild the output on every commit:
-      ```sh
-      cp hooks/post-rewrite .git/hooks/post-rewrite
-      chmod +x .git/hooks/post-rewrite
-      ```
--->
-  3. ["How to write a good explainer"][explainer] explains how to make a good first impression.
+function fullName(this) { // explicit this parameter
+  return `${this.firstName} ${this.lastName}`
+}
 
-      > Each TC39 proposal should have a `README.md` file which explains the purpose
-      > of the proposal and its shape at a high level.
-      >
-      > ...
-      >
-      > The rest of this page can be used as a template ...
+function fullName(this user) { // explicit naming `this` to `user`
+  return `${user.firstName} ${user.lastName}`
+}
 
-      Your explainer can point readers to the `index.html` generated from `spec.emu`
-      via markdown like
+function fullName(this {firstName, lastName}) { // destructuring
+  return `${firstName} ${lastName}`
+}
+```
 
-      ```markdown
-      You can browse the [ecmarkup output](https://ACCOUNT.github.io/PROJECT/)
-      or browse the [source](https://github.com/ACCOUNT/PROJECT/blob/HEAD/spec.emu).
-      ```
+Its primary use case is to play nicely with the [function bind proposal](https://github.com/zenparsing/es-function-bind), making such functions more readable. For example:
 
-      where *ACCOUNT* and *PROJECT* are the first two path elements in your project's Github URL.
-      For example, for github.com/**tc39**/**template-for-proposals**, *ACCOUNT* is "tc39"
-      and *PROJECT* is "template-for-proposals".
+```js
+function zip (this array, otherArray) {
+  return array.map( (a, i) => [a, otherArray[i]] )
+}
 
+function flatten (this subject) {
+  return subject.reduce( (a,b) => a.concat(b) )
+}
 
-## Maintain your proposal repo
+[10,20]
+  ::zip( [1,2] )
+  ::flatten()
+//=> [10, 1, 20, 2]
+```
 
-  1. Make your changes to `spec.emu` (ecmarkup uses HTML syntax, but is not HTML, so I strongly suggest not naming it ".html")
-  1. Any commit that makes meaningful changes to the spec, should run `npm run build` and commit the resulting output.
-  1. Whenever you update `ecmarkup`, run `npm run build` and commit any changes that come from that dependency.
+## Motivation
 
-  [explainer]: https://github.com/tc39/how-we-work/blob/HEAD/explainer.md
+The "keyword" `this` has been one of the greatest sources of confusion for programmers learning and using JavaScript. Fundamentally, it boils down to **two primary reasons**:
+
+1. `this` is an **implicit** parameter, and
+2. `this` **implicitly performs variable shadowing** in your functions.
+
+Variable shadowing is true source of why `this` is so confusing to learn. In fact, variable shadowing is a bad practice in general. For example:
+
+```js
+function process (obj, name) {
+  obj.taskName = name;
+  doAsync(function (obj, amount) {
+    obj.x += amount;
+  });
+};
+```
+
+In the above code, `obj.x` is referring to a different `obj` than `obj.name`. An experienced programmer would likely think this code is silly. Why name the inner parameter `obj` when there is already another variable in the same scope with the same name?
+
+Yet, this behavior is exactly what `this` proceeds to do. If we were to translate the above example to use method-style functions:
+
+```js
+function process (name) {
+  this.taskName = name;
+  doAsync(function (amount) {
+    this.x += amount;
+  });
+};
+```
+
+...we would end up with code *just as bad* as the original example. The second `this` is referring to a different object than the first `this`, even though they have the same name.
+
+However, if we could **explicitly name** the object within the function parameters, we could disambiguate the two to avoid such variable shadowing, and make the above example look something more like this:
+
+```js
+function process (this obj, name) {
+  obj.taskName = name;
+  doAsync(function callback (this result, amount) {
+    result.amount += 2;
+  });
+};
+```
+
+Explicit `this` parameter also allow type annotation or parameter decorators be added just like normal parameter.
+
+```ts
+// Type annotation (TypeScript, already possible today)
+Number.prototype.toHexString = function (this: number) {
+  return this.toString(16)
+}
+```
+
+```ts
+// Parameter decorators (future proposal)
+Number.prototype.toHexString = function (@toNumber this num) {
+  return num.toString(16) // same as Number(num).toString(16)
+}
+```
+
+## Protect programmers by throwing as early as possible
+
+If a function explicitly names `this`, attempting to use `this` inside the body will throw an error:
+
+```js
+function method (this elem, e) {
+  console.log("Elem:", elem) // OK
+  console.log("this:", this) // <-- Syntax error!
+}
+```
+
+This behavior fits well with arrow functions, since they don't contain their own `this` in the first place.
+
+```js
+function callback (this elem, e) {
+  alert(`You entered: ${elem.value}`);
+  setTimeout( () => elem.value = '', 1000 ) // OK
+  setTimeout( () => this.value = '', 1000 ) // <-- Syntax error!
+}
+```
+
+As normal, an inner `function` get its own `this`, which you can still choose whether or not to rename:
+
+```js
+runTask(function cb (this elem, e) {
+
+  elem.runAsyncTask(function () {
+    console.log("Outer elem:", elem) // OK
+    console.log("Inner this:", this) // OK
+  });
+})
+```
+
+Class constructor can't use explicit `this` syntax because class constructor can only be used via `new` and `this` in the constructor is never a parameter or argument passed by caller, the `this` value in constructor is generated by the constructor or its base class.
+
+```js
+class C {
+  constructor(this) { // <-- Syntax error!
+    // ...
+  }
+}
+```
+
+If a function has explicitly named its `this` parameter, it could be useful to throw an error when that function gets called without one or used via `new`. For example:
+
+```js
+function zip (this array, otherArray) {
+  return array.map( (a, i) => [a, otherArray[i]] )
+}
+
+zip() //=> Throws a TypeError on invocation,
+      //   before `array.map(...)` is run.
+
+new zip() //=> Also throws a TypeError
+```
+
+## Alternate Syntax
+
+Matching the [function bind proposal](https://github.com/zenparsing/es-function-bind):
+
+```js
+function array::zip (otherArray) {
+  return array.map( (a, i) => [a, otherArray[i]] )
+}
+
+function subject::flatten () {
+  return subject.reduce( (a,b) => a.concat(b) )
+}
+
+[10,20]
+  ::zip( [1,2] )
+  ::flatten()
+//=> [10, 1, 20, 2]
+```
