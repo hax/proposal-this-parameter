@@ -25,7 +25,7 @@ Author: @hax (HE Shi-Jun), @gilbert
 
 There is an old proposal [gilbert/es-explicit-this](https://github.com/gilbert/es-explicit-this) presented in Feb 2020 TC39 meeting but not advanced. This revised version drop the features of renaming and destructuring `this` in the old proposal, only focus on the basic feature of `this` parameter syntax which TypeScript/Flow already support.
 
-[Type Annotation proposal](https://github.com/tc39/proposal-type-annotations/blob/a4315be8a311980ca525dc539585b10b7478a63e/README.md#this-parameters) also include this feature, but strictly speaking, `this` parameter itself is not annotation, and could have runtime semantic which type annotation proposal intentionally avoid, so it's better to spec `this` parameter in this seperate proposal. 
+[Type Annotation proposal](https://github.com/tc39/proposal-type-annotations/blob/a4315be8a311980ca525dc539585b10b7478a63e/README.md#this-parameters) also include this feature, but strictly speaking, `this` parameter itself is not annotation, and could have [runtime semantic](#runtime-errors) which type annotation proposal intentionally avoid, so it's better to spec `this` parameter in this seperate proposal. 
 
 ## Motivation
 
@@ -95,7 +95,7 @@ Class constructor can't use `this` parameter because class constructor can only 
 
 Note, TS and Flow (and even Java 8) all report static errors for such cases.
 
-## Runtime errors:
+## Runtime errors
 
 If a function has `this` parameter, it could be useful to throw an error when that function gets called without one or used via `new`. For example:
 
