@@ -49,14 +49,12 @@ But Extensions proposal could be revised to only accept functions with `this` pa
 
 ```js
 // zip-util.js
+// an util function, no `this` parameter
 export function zip (array, otherArray) {
   return array.map( (a, i) => [a, otherArray[i]] )
 }
 ```
 
 ```js
-// 
-
 import ::{zip} from "./zip-util.js" // TypeError
-[10, 20]::zip([1, 2])
 ```
