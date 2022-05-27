@@ -113,8 +113,7 @@ new zip() //=> Also throws a TypeError
 This runtime semantic also useful to call-this proposal or Extensions proposal, see [examples](invoke-as-method.md).
 
 ## Prior Arts:
-- Java 8+ (explicit receiver parameter)
-- TypeScript
-- FlowType
+- [Java 8+ (receiver parameter)](https://docs.oracle.com/javase/specs/jls/se8/html/jls-8.html#jls-8.4.1-220)
+- [TypeScript](https://www.typescriptlang.org/docs/handbook/2/classes.html#this-parameters)
+- [Flow](https://flow.org/en/docs/types/functions/#toc-function-this)
 
-##
