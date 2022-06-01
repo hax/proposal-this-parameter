@@ -80,7 +80,7 @@ import ::{toHex} from "./utils.js"
 function f(a, this /* syntax error */ ) {}
 ```
 
-Arraw functions can not have `this` parameter because `this` in arrow functions are always lexical.
+Arrow functions can not have `this` parameter because `this` in arrow functions are always lexical.
 ```js
 let f = (this /* syntax error */ ) => 0
 ```
