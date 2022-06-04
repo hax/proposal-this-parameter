@@ -32,6 +32,7 @@ There is an old proposal [gilbert/es-explicit-this](https://github.com/gilbert/e
 - Standardize `this` parameter syntax of TS/Flow/etc, simpify tool chains of them
 - Narrow the gap between JavaScript and TypeScript, eliminate the confusion of newcomers
 - Effort of reducing the syntax burdens of Type Annotation proposal
+- Provide syntax for "method" (function which should be called with receiver)
 
 ## Use cases
 
@@ -72,6 +73,8 @@ export function toHex(@numeric this) {
 import ::{toHex} from "./utils.js"
 42::toHex() // Extensions (stage 1 proposal)
 ```
+
+Explicit `this` parameter also provide a syntax/semantic for real "method" (function which should be called with receiver). This also allow linters improve the `this`-related rules (eg. https://eslint.org/docs/rules/no-invalid-this and https://eslint.org/docs/rules/prefer-arrow-callback#allowunboundthis).
 
 ## Early errors
 
@@ -116,4 +119,7 @@ This runtime semantic also useful to call-this proposal or Extensions proposal, 
 - [Java 8+ (receiver parameter)](https://docs.oracle.com/javase/specs/jls/se8/html/jls-8.html#jls-8.4.1-220)
 - [TypeScript](https://www.typescriptlang.org/docs/handbook/2/classes.html#this-parameters)
 - [Flow](https://flow.org/en/docs/types/functions/#toc-function-this)
+
+## Old disussions
+- [`function (this | arg1, arg2) syntax`](https://esdiscuss.org/topic/inner-functions-and-outer-this-re-that-hash-symbol#content-25)
 
